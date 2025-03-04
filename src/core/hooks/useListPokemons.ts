@@ -1,15 +1,24 @@
 import { toast } from "sonner";
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useToastColors } from "./useToastColors";
 import { fetchListPokemons } from "../api";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export const useListPokemons = (autoFetch = true) => {
   const { getToastForType } = useToastColors();
 
-  const pokemonsQuery = useQuery({
+  const pokemonsQuery = useInfiniteQuery({
     queryKey: ["list-pokemons"],
-    queryFn: () => fetchListPokemons(),
+    queryFn: ({ pageParam = 1 }) => fetchListPokemons(pageParam),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.next) {
+        const url = new URL(lastPage.next);
+        const offset = url.searchParams.get("offset");
+        return offset ? parseInt(offset) : undefined;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     refetchOnWindowFocus: false,
     retry: false,
     enabled: autoFetch,
@@ -25,8 +34,10 @@ export const useListPokemons = (autoFetch = true) => {
   }, [pokemonsQuery.isError, pokemonsQuery.error, getToastForType]);
 
   return {
-    fetchPokemons: pokemonsQuery.refetch,
-    listPokemons: pokemonsQuery.data?.data ?? [],
+    fetchNextPage: pokemonsQuery.fetchNextPage,
+    hasNextPage: pokemonsQuery.hasNextPage,
+    isFetchingNextPage: pokemonsQuery.isFetchingNextPage,
+    listPokemons: pokemonsQuery.data?.pages.flatMap((page) => page.data) ?? [],
     isLoading: pokemonsQuery.isLoading,
   };
 };
