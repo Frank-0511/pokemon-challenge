@@ -2,12 +2,11 @@ import { getPokemonsAdapter } from "../adapters";
 import { GetPokemonApiResponse, GetPokemonInfoApiResponse } from "../types";
 import axiosInstance from "./axiosInstance";
 
-export const fetchListPokemons = async () => {
+export const fetchListPokemons = async (page = 1) => {
   const response = await axiosInstance.get<GetPokemonApiResponse>("/", {
     params: {
-      results: 2000,
-      page: 1,
-      inc: "name,email,picture,gender,phone,cell,id",
+      limit: 20,
+      page,
     },
   });
   return getPokemonsAdapter(response.data);
